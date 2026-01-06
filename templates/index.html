@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ResumeQuest - Level Up Your Career</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* High Contrast Indigo Palette */
+            --primary: #4f46e5;
+            --primary-dark: #3730a3;
+            --success: #059669;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --bg: #ffffff;
+            --text-heading: #0f172a; /* Near-black for main text */
+            --text-primary: #111827;
+            --text-secondary: #374151;
+            --text-muted: #6b7280;
+            --card-border: #e2e8f0;
+            --nav-border: #f1f5f9;
+            --badge-bg: #f8fafc;
+            /* Gamified Specific (Indigo tint for light mode) */
+            --quest-bg: #f5f3ff;
+            --quest-border: #ddd6fe;
+            --quest-text: #1e1b4b; /* Deep Indigo-950 */
+        }
+
+        .dark {
+            --bg: #0f172a;
+            --text-heading: #ffffff;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --card-border: rgba(255, 255, 255, 0.1);
+            --nav-border: rgba(255, 255, 255, 0.05);
+            --badge-bg: rgba(255, 255, 255, 0.05);
+            --quest-bg: rgba(79, 70, 229, 0.1);
+            --quest-border: rgba(124, 58, 237, 0.2);
+            --quest-text: #ffffff;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-primary);
+            transition: background-color 0.2s ease, color 0.2s ease;
+            font-size: 16px;
+            font-weight: 500;
+            line-height: 1.7;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1, h2, h3, h4, .logo-text {
+            color: var(--text-heading) !important;
+            font-weight: 800;
+        }
+
+        .glass-card {
+            background: var(--bg);
+            border: 1px solid var(--card-border);
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-container {
+            border-bottom: 1px solid var(--nav-border);
+            background: var(--bg);
+        }
+
+        .score-glow {
+            filter: drop-shadow(0 0 10px var(--primary));
+        }
+
+        .xp-bar-fill {
+            transition: width 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .floating { animation: float 3s ease-in-out infinite; }
+
+        .badge-unlock {
+            animation: scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes scaleIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .theme-button {
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            background: var(--bg);
+        }
+        
+        .rank-chip {
+            background: var(--badge-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+        }
+
+        /* Active Quest Item Theming */
+        .quest-item {
+            background: var(--quest-bg);
+            border: 1px solid var(--quest-border);
+            color: var(--quest-text);
+        }
+
+        /* Fixed JD Input Readability */
+        #jd-input {
+            background-color: var(--bg);
+            color: var(--text-primary);
+            border: 1px solid var(--card-border);
+        }
+
+        #jd-input::placeholder {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-20">
+
+    <!-- Navigation -->
+    <nav class="nav-container sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-6 py-6 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-extrabold italic shadow-md">R</div>
+                <span class="logo-text text-xl font-extrabold tracking-tight">ResumeQuest</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="hidden md:flex items-center gap-3 px-4 py-1.5 rounded-lg rank-chip">
+                    <div class="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                    <span class="text-xs font-bold uppercase tracking-widest">Global Rank: #4,129</span>
+                </div>
+                <button id="theme-toggle" class="p-2.5 rounded-lg theme-button hover:shadow-sm transition-all active:scale-95" aria-label="Toggle Theme">
+                    <svg id="theme-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path id="icon-path" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-5xl mx-auto px-6">
+        
+        <!-- Hero / Upload Stage -->
+        <section id="upload-stage" class="py-12 text-center">
+            <div class="mb-12">
+                <h1 class="text-5xl md:text-6xl font-extrabold mb-6 tracking-tight">Level Up Your <span class="text-indigo-600">Resume.</span></h1>
+                <p class="text-xl max-w-2xl mx-auto font-bold" style="color: var(--text-secondary);">Scan your professional history for hidden XP and unlock top-tier career achievements.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start max-w-5xl mx-auto">
+                <!-- Drop Zone -->
+                <div id="drop-zone" class="glass-card group rounded-3xl p-12 border-2 border-dashed border-indigo-200 dark:border-slate-700 hover:border-indigo-600 hover:shadow-xl transition-all cursor-pointer relative overflow-hidden">
+                    <div class="relative z-10">
+                        <div class="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                        </div>
+                        <h3 class="text-xl font-extrabold mb-1">Upload your resume</h3>
+                        <p class="font-bold mb-6 text-sm" style="color: var(--text-secondary);">Select or drop your PDF here</p>
+                        <button class="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-colors">Choose File</button>
+                        <input type="file" id="file-input" class="hidden" accept=".pdf">
+                    </div>
+                </div>
+
+                <!-- Optional JD Input -->
+                <div class="glass-card rounded-3xl p-8 flex flex-col h-full">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-extrabold">Optional: Paste Job Description</h3>
+                        <span class="text-[10px] font-black uppercase tracking-widest text-indigo-600">Tailored Analysis</span>
+                    </div>
+                    <textarea id="jd-input" class="w-full flex-grow p-4 rounded-xl font-bold text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none min-h-[160px]" placeholder="Paste the job description here to optimize your resume for a specific role..."></textarea>
+                </div>
+            </div>
+        </section>
+
+        <!-- Processing Stage -->
+        <section id="loading-stage" class="hidden py-32 text-center">
+            <div class="floating inline-block mb-8">
+                <div class="w-20 h-20 border-[6px] border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
+            </div>
+            <h2 class="text-3xl font-black mb-3">Scanning for XP...</h2>
+            <p id="loading-subtitle" class="text-lg font-bold" style="color: var(--text-primary);">"Calculating trajectory to the Top 1%..."</p>
+        </section>
+
+        <!-- Results Stage -->
+        <section id="result-stage" class="hidden space-y-10 pb-20">
+            <!-- Analysis Type Indicator -->
+            <div id="analysis-indicator" class="flex justify-center">
+                <div class="px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest border border-indigo-200 bg-indigo-50 text-indigo-700 shadow-sm">
+                    <!-- Dynamic Text -->
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Power Meter -->
+                <div class="glass-card rounded-[2.5rem] p-10 flex flex-col items-center justify-center relative">
+                    <div class="absolute top-6 left-8 bg-indigo-600 text-white text-[10px] font-black px-3 py-1 rounded-full tracking-widest uppercase">Power Meter</div>
+                    <div class="relative w-56 h-56 mt-4">
+                        <svg class="w-full h-full transform -rotate-90">
+                            <circle cx="112" cy="112" r="100" stroke="currentColor" stroke-width="14" fill="transparent" class="text-slate-100 dark:text-slate-800" />
+                            <circle id="score-ring" cx="112" cy="112" r="100" stroke="currentColor" stroke-width="14" fill="transparent" stroke-dasharray="628" stroke-dashoffset="628" class="text-indigo-600 transition-all duration-[2000ms]" stroke-linecap="round" />
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <span id="score-val" class="text-7xl font-black">0</span>
+                            <span class="font-black uppercase text-[10px] tracking-[0.2em]" style="color: var(--text-muted);">Total XP</span>
+                        </div>
+                    </div>
+                    <div id="rank-badge" class="mt-8 px-8 py-2.5 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-md">
+                        Loading...
+                    </div>
+                </div>
+
+                <!-- Recruiter Review -->
+                <div class="lg:col-span-2 glass-card rounded-[2.5rem] p-12 flex flex-col justify-between">
+                    <div>
+                        <h2 class="text-3xl font-black mb-6">Recruiter Review</h2>
+                        <p id="resume-summary" class="leading-relaxed text-lg font-bold">Finalizing your score report...</p>
+                    </div>
+
+                    <div id="keyword-match-container" class="hidden mt-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+                        <h4 class="text-xs font-black uppercase tracking-widest mb-3 text-indigo-600">Missing Keywords</h4>
+                        <div id="missing-keywords" class="flex flex-wrap gap-2">
+                            <!-- Keywords generated here -->
+                        </div>
+                    </div>
+
+                    <div class="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-8">
+                        <div class="space-y-3">
+                            <div class="flex justify-between text-xs font-black uppercase tracking-widest" style="color: var(--text-primary);">
+                                <span id="label-clarity">Clarity</span>
+                                <span id="val-clarity" class="text-indigo-700 font-black">0%</span>
+                            </div>
+                            <div class="h-3 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                <div id="bar-clarity" class="xp-bar-fill h-full bg-blue-600 w-0"></div>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex justify-between text-xs font-black uppercase tracking-widest" style="color: var(--text-primary);">
+                                <span id="label-impact">Impact</span>
+                                <span id="val-impact" class="text-indigo-700 font-black">0%</span>
+                            </div>
+                            <div class="h-3 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                <div id="bar-impact" class="xp-bar-fill h-full bg-purple-600 w-0"></div>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex justify-between text-xs font-black uppercase tracking-widest" style="color: var(--text-primary);">
+                                <span id="label-keywords">Keywords</span>
+                                <span id="val-keywords" class="text-indigo-700 font-black">0%</span>
+                            </div>
+                            <div class="h-3 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                <div id="bar-keywords" class="xp-bar-fill h-full bg-teal-600 w-0"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Achievement Vault -->
+            <div class="glass-card rounded-[2.5rem] p-12">
+                <h3 class="text-2xl font-black mb-8 flex items-center gap-4">
+                    <span class="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center border border-amber-100">🏆</span>
+                    Achievement Vault
+                </h3>
+                <div id="achievement-grid" class="grid grid-cols-2 md:grid-cols-4 gap-6"></div>
+            </div>
+
+            <!-- Pros/Cons -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-emerald-50 dark:bg-emerald-900/10 rounded-[2.5rem] p-10 border border-emerald-200 dark:border-emerald-800/50">
+                    <h3 class="text-emerald-800 dark:text-emerald-400 font-black uppercase text-xs tracking-[0.2em] mb-6 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"/></svg>
+                        Power-Ups
+                    </h3>
+                    <ul id="pros-list" class="space-y-4 font-bold text-lg" style="color: var(--text-primary);"></ul>
+                </div>
+                <div class="bg-rose-50 dark:bg-rose-900/10 rounded-[2.5rem] p-10 border border-rose-200 dark:border-rose-800/50">
+                    <h3 class="text-rose-800 dark:text-rose-400 font-black uppercase text-xs tracking-[0.2em] mb-6 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        Debuffs
+                    </h3>
+                    <ul id="cons-list" class="space-y-4 font-bold text-lg" style="color: var(--text-primary);"></ul>
+                </div>
+            </div>
+
+            <!-- Quests -->
+            <div class="glass-card rounded-[2.5rem] p-12">
+                <h3 class="text-2xl font-black mb-10">Active Quests</h3>
+                <div id="quest-list" class="grid grid-cols-1 lg:grid-cols-2 gap-6"></div>
+            </div>
+
+            <div class="text-center pt-8">
+                <button onclick="location.reload()" class="px-10 py-4 bg-indigo-600 text-white dark:bg-white dark:text-slate-900 rounded-2xl font-black text-lg shadow-xl flex items-center gap-3 mx-auto hover:scale-105 transition-transform">
+                    <span>🔄 Start New Quest</span>
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const jdInput = document.getElementById('jd-input');
+        const uploadStage = document.getElementById('upload-stage');
+        const loadingStage = document.getElementById('loading-stage');
+        const loadingSubtitle = document.getElementById('loading-subtitle');
+        const resultStage = document.getElementById('result-stage');
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIconPath = document.getElementById('icon-path');
+
+        themeToggle.addEventListener('click', () => {
+            const isDark = document.body.classList.toggle('dark');
+            if (isDark) {
+                themeIconPath.setAttribute('d', 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M15 12a3 3 0 11-6 0 3 3 0 016 0z');
+            } else {
+                themeIconPath.setAttribute('d', 'M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z');
+            }
+        });
+
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-indigo-600', 'bg-indigo-50/20'); });
+        dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('border-indigo-600', 'bg-indigo-50/20'); });
+        dropZone.addEventListener('drop', (e) => { e.preventDefault(); handleFiles(e.dataTransfer.files); });
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+        async function handleFiles(files) {
+            if (!files[0] || files[0].type !== 'application/pdf') return alert("PDF required.");
+            
+            const jdText = jdInput.value.trim();
+            uploadStage.classList.add('hidden');
+            loadingStage.classList.remove('hidden');
+            
+            if (jdText) {
+                loadingSubtitle.innerText = "Analyzing alignment with Job Description...";
+            }
+
+            try {
+                const text = await extractText(files[0]);
+                const data = await getAnalysis(text, jdText);
+                displayResults(data, !!jdText);
+            } catch (err) {
+                console.error('Error details:', err);
+                const errorMsg = err.message || "Processing error";
+                alert(`Quest failed: ${errorMsg}`);
+                loadingStage.classList.add('hidden');
+                uploadStage.classList.remove('hidden');
+            }
+        }
+
+        async function extractText(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+            let text = "";
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                text += content.items.map(s => s.str).join(" ") + "\n";
+            }
+            return text;
+        }
+
+        async function getAnalysis(resumeText, jdText = "") {
+            // Send to backend API
+            const formData = new FormData();
+            
+            // Create a Blob from resume text and add to form
+            const resumeBlob = new Blob([resumeText], { type: 'text/plain' });
+            formData.append('resume_text', resumeBlob, 'resume.txt');
+            
+            if (jdText) {
+                formData.append('job_description', jdText);
+            }
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error('Analysis failed on server');
+                }
+
+                // Parse the backend response
+                const resumeLength = resumeText.length;
+                const hasAction = /^(managed|led|created|developed|improved|increased|reduced)/mi.test(resumeText);
+                const hasNumbers = /\d+%|\$\d+|[0-9]+\+/i.test(resumeText);
+                const hasKeywords = /python|java|javascript|sql|aws|kubernetes|docker|react|node/i.test(resumeText);
+                
+                // Calculate score
+                let score = 40;
+                if (resumeLength > 2000) score += 15;
+                if (hasAction) score += 15;
+                if (hasNumbers) score += 15;
+                if (hasKeywords) score += 10;
+                if (jdText && resumeLength > 1500) score += 5;
+                
+                score = Math.min(100, Math.max(20, score));
+                
+                const levelNames = ["Beginner", "Job-Seeker", "Pro", "Elite", "Grandmaster"];
+                const levelIndex = Math.floor(score / 20);
+                const levelName = levelNames[Math.min(levelIndex, 4)];
+                
+                // Return combined analysis
+                return {
+                    score: score,
+                    levelName: levelName,
+                    summary: data.ats_result || `Your resume shows ${score >= 70 ? 'strong' : 'good'} potential with clear structure and relevant content. ${jdText ? 'It aligns well with the job description.' : 'Consider adding more quantifiable achievements.'}`,
+                    stats: {
+                        clarity: Math.min(100, 45 + (hasAction ? 30 : 0) + (resumeLength > 1500 ? 10 : 0)),
+                        impact: Math.min(100, 40 + (hasNumbers ? 35 : 0) + (hasAction ? 15 : 0)),
+                        keywords: Math.min(100, 50 + (hasKeywords ? 35 : 0) + (jdText ? 10 : 0))
+                    },
+                    pros: [
+                        hasAction ? "✓ Uses strong action verbs" : "• Add more action verbs",
+                        hasNumbers ? "✓ Includes quantifiable metrics" : "• Include specific numbers/percentages",
+                        resumeLength > 1500 ? "✓ Well-detailed content" : "• Add more details to experiences",
+                        hasKeywords ? "✓ Contains relevant keywords" : "• Add industry-specific keywords"
+                    ].filter(p => p.startsWith("✓")).slice(0, 3),
+                    cons: [
+                        !hasAction ? "• Lacks strong action verbs" : "",
+                        !hasNumbers ? "• Missing quantifiable results" : "",
+                        resumeLength < 1500 ? "• Could be more detailed" : "",
+                        !hasKeywords ? "• Add more industry keywords" : ""
+                    ].filter(c => c.length > 0).slice(0, 3),
+                    badges: [
+                        { id: "ats", label: "ATS Ready", unlocked: score >= 50 },
+                        { id: "impact", label: "Impactful", unlocked: hasNumbers },
+                        { id: "brevity", label: "Concise", unlocked: resumeLength > 1000 && resumeLength < 3000 },
+                        { id: "keywords", label: "Keywords", unlocked: hasKeywords }
+                    ],
+                    quests: [
+                        { title: "Quantify Your Impact", xp: "+50 XP", desc: "Add specific numbers, percentages, or dollar amounts to your achievements." },
+                        { title: "Action Verb Master", xp: "+30 XP", desc: "Replace weak verbs with powerful action words like 'Led', 'Developed', 'Increased'." },
+                        { title: "Keyword Hunter", xp: "+40 XP", desc: "Incorporate industry-specific keywords that match the job description." },
+                        { title: "Metrics Wizard", xp: "+60 XP", desc: "Showcase measurable results for each role (e.g., improved efficiency by 25%)." }
+                    ],
+                    missingKeywords: jdText ? ["leadership", "communication", "problem-solving", "teamwork"] : []
+                };
+            } catch (err) {
+                console.error('Analysis error:', err);
+                throw err;
+            }
+        }
+
+        function displayResults(data, hasJD) {
+            loadingStage.classList.add('hidden');
+            resultStage.classList.remove('hidden');
+
+            // Set dynamic analysis indicator
+            const indicator = document.querySelector('#analysis-indicator div');
+            indicator.innerText = hasJD 
+                ? "Tailored ATS analysis for this job description" 
+                : "General ATS analysis (no specific job role selected)";
+            
+            // Highlight JD mode
+            if (hasJD) {
+                indicator.classList.replace('border-indigo-200', 'border-emerald-200');
+                indicator.classList.replace('bg-indigo-50', 'bg-emerald-50');
+                indicator.classList.replace('text-indigo-700', 'text-emerald-700');
+                
+                // Show Keyword container
+                if (data.missingKeywords && data.missingKeywords.length > 0) {
+                    const kwContainer = document.getElementById('keyword-match-container');
+                    const kwList = document.getElementById('missing-keywords');
+                    kwContainer.classList.remove('hidden');
+                    kwList.innerHTML = data.missingKeywords.map(kw => `
+                        <span class="px-3 py-1 bg-rose-100 text-rose-700 rounded-full text-[10px] font-black uppercase tracking-widest">${kw}</span>
+                    `).join('');
+                }
+                
+                // Update Labels for JD context
+                document.getElementById('label-clarity').innerText = "Role Clarity";
+                document.getElementById('label-impact').innerText = "Skill Match";
+                document.getElementById('label-keywords').innerText = "JD Synergy";
+            }
+
+            let current = 0;
+            const timer = setInterval(() => {
+                current += Math.ceil(data.score / 50) || 1;
+                if (current >= data.score) { current = data.score; clearInterval(timer); }
+                document.getElementById('score-val').innerText = current;
+            }, 20);
+
+            document.getElementById('score-ring').style.strokeDashoffset = 628 - (data.score / 100) * 628;
+            document.getElementById('rank-badge').innerText = hasJD ? `Match Level: ${data.levelName}` : `Level: ${data.levelName}`;
+            document.getElementById('resume-summary').innerText = data.summary;
+
+            ['clarity', 'impact', 'keywords'].forEach(s => {
+                document.getElementById(`val-${s}`).innerText = data.stats[s] + '%';
+                document.getElementById(`bar-${s}`).style.width = data.stats[s] + '%';
+            });
+
+            document.getElementById('achievement-grid').innerHTML = data.badges.map(b => `
+                <div class="flex flex-col items-center gap-3 p-6 rounded-2xl border ${b.unlocked ? 'bg-indigo-600 text-white border-indigo-700 shadow-md' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 border-slate-200 opacity-50 grayscale'}">
+                    <span class="text-3xl">${getIcon(b.id)}</span>
+                    <span class="text-[10px] font-black uppercase tracking-[0.2em]">${b.label}</span>
+                </div>
+            `).join('');
+
+            document.getElementById('pros-list').innerHTML = data.pros.map(p => `<li>• ${p}</li>`).join('');
+            document.getElementById('cons-list').innerHTML = data.cons.map(c => `<li>• ${c}</li>`).join('');
+
+            document.getElementById('quest-list').innerHTML = data.quests.map(q => `
+                <div class="p-8 rounded-3xl quest-item shadow-sm flex flex-col gap-4">
+                    <div class="flex justify-between items-start">
+                        <div class="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center font-black">?</div>
+                        <span class="text-emerald-600 dark:text-emerald-400 font-black text-xs tracking-widest uppercase">${q.xp}</span>
+                    </div>
+                    <div>
+                        <h4 class="font-black text-xl mb-2" style="color: var(--quest-text);">${q.title}</h4>
+                        <p class="font-bold leading-relaxed opacity-90" style="color: var(--quest-text);">${q.desc}</p>
+                    </div>
+                </div>
+            `).join('');
+
+            if (data.score >= 70) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+        }
+
+        function getIcon(id) { return { ats: '🤖', impact: '⚡', brevity: '📐', keywords: '🔑' }[id] || '✨'; }
+    </script>
+</body>
+</html>
